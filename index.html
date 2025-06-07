@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบให้คะแนนพานไหว้ครู</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts - Inter for modern typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the body and watermark */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0; /* Fallback background color */
+            background-image: url('https://i.pinimg.com/originals/df/59/2a/df592afd242f629bf7fb7651a1053aa7.jpg'); /* Watermark image */
+            background-size: cover; /* Cover the entire body */
+            background-attachment: fixed; /* Keep background fixed when scrolling */
+            background-position: center; /* Center the background image */
+            position: relative; /* Needed for the overlay effect */
+        }
+        /* Overlay to make text readable over the watermark */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.85); /* Semi-transparent white overlay */
+            z-index: -1; /* Place behind other content */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+    <!-- Header Section -->
+    <header class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-4 shadow-lg rounded-b-xl flex flex-col sm:flex-row items-center justify-center relative z-10">
+        <!-- School Logo -->
+        <img src="https://img5.pic.in.th/file/secure-sv1/Black-And-Orange-Modern-National-Hamburger-Day-Facebook-Post-Square.png" 
+             alt="Logo โรงเรียนบ่อสุพรรณวิทยา" 
+             class="h-24 w-24 object-contain rounded-full shadow-md mb-2 sm:mb-0 sm:mr-4">
+        <!-- Title and Subtitle -->
+        <h1 class="text-center text-4xl font-extrabold drop-shadow-lg">
+            ระบบให้คะแนนพานไหว้ครู
+            <br>
+            <span class="text-2xl font-semibold">โรงเรียนบ่อสุพรรณวิทยา ประจำปีการศึกษา 2568</span>
+        </h1>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow flex items-center justify-center p-4">
+        <!-- Login Section -->
+        <div id="login-section" class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-200">
+            <h2 class="text-3xl font-bold text-center mb-6 text-gray-800">เข้าสู่ระบบกรรมการ</h2>
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label for="username" class="block text-gray-700 text-lg font-medium mb-2">ชื่อผู้ใช้ (T01-T06):</label>
+                    <input type="text" id="username" name="username" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-lg">
+                </div>
+                <div>
+                    <label for="password" class="block text-gray-700 text-lg font-medium mb-2">รหัสผ่าน:</label>
+                    <input type="password" id="password" name="password" required 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 text-lg">
+                </div>
+                <button type="submit" 
+                        class="w-full bg-orange-500 hover:bg-orange-600 text-white py-3 rounded-lg font-semibold text-xl 
+                               transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                    เข้าสู่ระบบ
+                </button>
+                <p id="login-error" class="text-red-600 text-center text-sm mt-3 hidden">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</p>
+            </form>
+        </div>
+
+        <!-- Scoring Section (Hidden by default until login) -->
+        <div id="scoring-section" class="hidden bg-white p-8 rounded-2xl shadow-xl w-full max-w-4xl border border-gray-200" 
+             style="max-height: 80vh; overflow-y: auto;">
+            <!-- Judge Info and Logout Button -->
+            <div class="flex flex-col sm:flex-row justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-3xl font-bold text-gray-800 text-center sm:text-left mb-4 sm:mb-0">
+                    <span id="judge-name-display"></span> 
+                    <span class="text-xl font-medium text-gray-600">(<span id="judge-id-display"></span>)</span>
+                </h2>
+                <button id="logout-button" 
+                        class="bg-red-500 hover:bg-red-600 text-white py-2 px-5 rounded-lg font-semibold text-lg 
+                               transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                    ออกจากระบบ
+                </button>
+            </div>
+
+            <!-- Tray Selection Dropdown -->
+            <div class="mb-6">
+                <label for="tray-select" class="block text-gray-700 text-lg font-medium mb-2">เลือกรหัสพานที่ต้องการให้คะแนน:</label>
+                <select id="tray-select" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-400 
+                               text-lg bg-white appearance-none cursor-pointer">
+                    <option value="">-- กรุณาเลือกพาน --</option>
+                    <!-- Options will be loaded dynamically by JavaScript -->
+                </select>
+                <p id="tray-info" class="text-gray-600 text-md mt-2"></p>
+            </div>
+
+            <!-- Scoring Form (Hidden by default until a tray is selected) -->
+            <form id="scoring-form" class="space-y-5 hidden">
+                <h3 class="text-2xl font-semibold text-gray-800 border-b pb-3 mb-4">
+                    หัวข้อการประเมิน <span id="current-tray-code" class="text-orange-600"></span>
+                </h3>
+                <div id="criteria-container" class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    <!-- Criteria inputs will be loaded dynamically by JavaScript -->
+                </div>
+                <div class="flex justify-center mt-8">
+                    <button type="submit" 
+                            class="bg-green-600 hover:bg-green-700 text-white py-3 px-8 rounded-lg font-semibold text-xl 
+                                   transition duration-300 ease-in-out transform hover:scale-105 shadow-md">
+                        ส่งคะแนน
+                    </button>
+                </div>
+            </form>
+            <!-- Message display for submission success/error -->
+            <p id="message-display" class="text-center text-lg mt-4"></p>
+
+            <!-- Loading Indicator for API calls -->
+            <div id="loading-indicator" class="hidden text-center text-gray-600 mt-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 inline-block"></div>
+                <p>กำลังส่งข้อมูล...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="bg-gray-800 text-white p-4 text-center rounded-t-xl shadow-lg relative z-10">
+        <p class="text-lg">พัฒนาโดย: นายสุชาครีย์ มานา</p>
+    </footer>
+
+    <script>
+        // --- Constants and Global Variables ---
+        // Google Script API URL for data submission
+        const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRUJnQypIhN3Y6miLbyKPmra_N0HnLbRpu83Avu5uwfDpyTuSR_IUukNZBO5lWMpA/exec';
+
+        // Judge credentials and group information
+        const JUDGES = {
+            'T01': { name: 'นายฉัตรชัย ผิวผ่อง', group: 'ม.ต้น' },
+            'T02': { name: 'นางสาวปวีณา สัมพันธมิตร', group: 'ม.ต้น' },
+            'T03': { name: 'นายชนินทร์ คล้ายคลัง', group: 'ม.ต้น' },
+            'T04': { name: 'นางสาวกนกวรรณ สีสำลี', group: 'ม.ปลาย' },
+            'T05': { name: 'นางสาวนุชนาฏ มังกร', group: 'ม.ปลาย' },
+            'T06': { name: 'นายณัฐพล หอมใจดี', group: 'ม.ปลาย' },
+        };
+
+        // All possible tray codes with their level and type indicators
+        const ALL_TRAYS = [
+            'A101', 'A102', 'A103', // ม.ต้น, สวยงาม
+            'A201', 'A202', 'A203', // ม.ต้น, สร้างสรรค์
+            'B101', 'B102', 'B103', // ม.ปลาย, สวยงาม
+            'B201', 'B202', 'B203', // ม.ปลาย, สร้างสรรค์
+        ];
+
+        // Scoring criteria for 'สวยงาม' (Beautiful) type trays
+        const CRITERIA_BEAUTIFUL = [
+            'ความสวยงาม',
+            'ความประณีตและละเอียด',
+            'คำอธิบายพาน',
+            'ความสมดุลขององค์ประกอบ',
+            'องค์ประกอบของพานไหว้ครู',
+            'ความสะอาดของสถานที่ทำพาน',
+            'ความตรงต่อเวลา',
+        ];
+
+        // Scoring criteria for 'สร้างสรรค์' (Creative) type trays
+        const CRITERIA_CREATIVE = [
+            'ความคิดสร้างสรรค์',
+            'การสื่อความหมายของพาน',
+            'ความประณีตในการประดิษฐ์',
+            'ความเหมาะสมในการเลือกใช้วัสดุ',
+            'ความครบถ้วนและสมดุล',
+            'ความสะอาดของสถานที่ทำพาน',
+            'ความตรงต่อเวลา',
+        ];
+
+        // Global variables to store current judge and selected tray information
+        let loggedInJudgeId = null;
+        let loggedInJudgeName = null;
+        let loggedInJudgeGroup = null;
+        let currentSelectedTray = null;
+
+        // --- UI Element References ---
+        const loginSection = document.getElementById('login-section');
+        const scoringSection = document.getElementById('scoring-section');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const judgeNameDisplay = document.getElementById('judge-name-display');
+        const judgeIdDisplay = document.getElementById('judge-id-display');
+        const logoutButton = document.getElementById('logout-button');
+        const traySelect = document.getElementById('tray-select');
+        const trayInfo = document.getElementById('tray-info');
+        const scoringForm = document.getElementById('scoring-form');
+        const currentTrayCodeDisplay = document.getElementById('current-tray-code');
+        const criteriaContainer = document.getElementById('criteria-container');
+        const messageDisplay = document.getElementById('message-display');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        // --- Event Listeners ---
+        // Handle login form submission
+        loginForm.addEventListener('submit', handleLogin);
+        // Handle logout button click
+        logoutButton.addEventListener('click', handleLogout);
+        // Handle tray selection change to display appropriate scoring form
+        traySelect.addEventListener('change', displayScoringForm);
+        // Handle scoring form submission
+        scoringForm.addEventListener('submit', sendScoreToGoogleSheet);
+
+        // --- Functions ---
+
+        /**
+         * Handles the login process.
+         * Validates username and password, then sets up the scoring interface.
+         * @param {Event} event - The form submission event.
+         */
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent default form submission
+            
+            const usernameInput = document.getElementById('username').value.toUpperCase().trim();
+            const passwordInput = document.getElementById('password').value.trim();
+
+            // Check if username exists and password is correct
+            if (JUDGES[usernameInput] && passwordInput === '12345') {
+                loggedInJudgeId = usernameInput;
+                loggedInJudgeName = JUDGES[usernameInput].name;
+                loggedInJudgeGroup = JUDGES[usernameInput].group;
+
+                // Update UI to show judge info and scoring section
+                judgeNameDisplay.textContent = loggedInJudgeName;
+                judgeIdDisplay.textContent = loggedInJudgeId;
+                loginSection.classList.add('hidden');
+                scoringSection.classList.remove('hidden');
+                loginError.classList.add('hidden'); // Hide any previous error
+
+                populateTraySelect(); // Populate tray dropdown based on judge's group
+                showMessage(''); // Clear any previous messages
+            } else {
+                // Show login error message
+                loginError.classList.remove('hidden');
+            }
+        }
+
+        /**
+         * Handles the logout process.
+         * Clears judge information and resets the UI to the login screen.
+         */
+        function handleLogout() {
+            // Reset global variables
+            loggedInJudgeId = null;
+            loggedInJudgeName = null;
+            loggedInJudgeGroup = null;
+            currentSelectedTray = null;
+
+            // Reset UI
+            loginSection.classList.remove('hidden');
+            scoringSection.classList.add('hidden');
+            loginForm.reset(); // Clear login form fields
+            scoringForm.reset(); // Clear scoring form fields
+            traySelect.innerHTML = '<option value="">-- กรุณาเลือกพาน --</option>'; // Reset tray dropdown
+            scoringForm.classList.add('hidden'); // Hide scoring form
+            criteriaContainer.innerHTML = ''; // Clear criteria inputs
+            trayInfo.textContent = ''; // Clear tray info
+            showMessage(''); // Clear any messages
+        }
+
+        /**
+         * Populates the tray selection dropdown based on the logged-in judge's group.
+         */
+        function populateTraySelect() {
+            traySelect.innerHTML = '<option value="">-- กรุณาเลือกพาน --</option>'; // Clear existing options
+
+            const filteredTrays = ALL_TRAYS.filter(trayCode => {
+                const trayLevel = trayCode.charAt(0); // 'A' for ม.ต้น, 'B' for ม.ปลาย
+                return (loggedInJudgeGroup === 'ม.ต้น' && trayLevel === 'A') ||
+                       (loggedInJudgeGroup === 'ม.ปลาย' && trayLevel === 'B');
+            });
+
+            // Add filtered trays to the dropdown
+            filteredTrays.forEach(trayCode => {
+                const option = document.createElement('option');
+                option.value = trayCode;
+                option.textContent = trayCode;
+                traySelect.appendChild(option);
+            });
+        }
+
+        /**
+         * Dynamically displays the scoring form with relevant criteria
+         * based on the selected tray's type (Beautiful or Creative).
+         */
+        function displayScoringForm() {
+            currentSelectedTray = traySelect.value;
+            criteriaContainer.innerHTML = ''; // Clear previous criteria inputs
+            scoringForm.classList.add('hidden'); // Hide form initially
+
+            if (!currentSelectedTray) {
+                trayInfo.textContent = '';
+                return; // No tray selected, hide form
+            }
+
+            const trayTypeDigit = currentSelectedTray.charAt(1); // '1' for Beautiful, '2' for Creative
+            let criteria = [];
+            let trayTypeLabel = '';
+            let trayLevelLabel = currentSelectedTray.charAt(0) === 'A' ? 'ม.ต้น' : 'ม.ปลาย';
+
+            if (trayTypeDigit === '1') {
+                criteria = CRITERIA_BEAUTIFUL;
+                trayTypeLabel = 'สวยงาม';
+            } else if (trayTypeDigit === '2') {
+                criteria = CRITERIA_CREATIVE;
+                trayTypeLabel = 'สร้างสรรค์';
+            }
+
+            // Update tray info display
+            trayInfo.textContent = `พานของระดับชั้น ${trayLevelLabel} ประเภท ${trayTypeLabel}`;
+            currentTrayCodeDisplay.textContent = `(${currentSelectedTray} - ${trayTypeLabel})`;
+
+            // Generate input fields for each criterion
+            criteria.forEach((criterion, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex flex-col'; // Flex container for label and select
+
+                const label = document.createElement('label');
+                label.htmlFor = `criterion-${index}`;
+                label.className = 'block text-gray-700 text-md font-medium mb-1';
+                label.textContent = `${index + 1}. ${criterion}:`;
+
+                const select = document.createElement('select');
+                select.id = `criterion-${index}`;
+                select.name = criterion; // Use criterion name as input name
+                select.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-orange-400 text-base bg-white appearance-none cursor-pointer';
+                select.required = true;
+
+                // Add score options 1-5
+                for (let i = 1; i <= 5; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = i;
+                    select.appendChild(option);
+                }
+
+                div.appendChild(label);
+                div.appendChild(select);
+                criteriaContainer.appendChild(div);
+            });
+
+            scoringForm.classList.remove('hidden'); // Show the scoring form
+        }
+
+        /**
+         * Sends the collected scores to the Google Sheet via the Google Script API.
+         * @param {Event} event - The form submission event.
+         */
+        async function sendScoreToGoogleSheet(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            loadingIndicator.classList.remove('hidden'); // Show loading indicator
+            messageDisplay.textContent = ''; // Clear previous messages
+
+            const formData = new FormData();
+            formData.append('action', 'submitScore'); // Action for Google Script
+            formData.append('timestamp', new Date().toLocaleString('th-TH', { timeZone: 'Asia/Bangkok' }));
+            formData.append('judgeId', loggedInJudgeId);
+            formData.append('judgeName', loggedInJudgeName);
+            formData.append('judgeGroup', loggedInJudgeGroup);
+            formData.append('trayCode', currentSelectedTray);
+
+            const trayTypeDigit = currentSelectedTray.charAt(1);
+            let trayTypeLabel = '';
+            if (trayTypeDigit === '1') {
+                trayTypeLabel = 'สวยงาม';
+            } else if (trayTypeDigit === '2') {
+                trayTypeLabel = 'สร้างสรรค์';
+            }
+            formData.append('trayType', trayTypeLabel);
+
+            let totalScore = 0;
+            const criteriaScores = {};
+
+            // Collect scores from dynamic inputs
+            const scoreInputs = criteriaContainer.querySelectorAll('select');
+            scoreInputs.forEach(input => {
+                const criterionName = input.name;
+                const score = parseInt(input.value, 10);
+                criteriaScores[criterionName] = score;
+                totalScore += score;
+            });
+
+            formData.append('criteriaScores', JSON.stringify(criteriaScores)); // Send criteria scores as JSON string
+            formData.append('totalScore', totalScore);
+
+            try {
+                const response = await fetch(GOOGLE_SCRIPT_URL, {
+                    method: 'POST',
+                    body: formData,
+                    redirect: 'follow', // Follow redirects if any
+                    mode: 'no-cors' // Use 'no-cors' mode for simpler Google Script integration (if script is configured)
+                                    // Note: In 'no-cors' mode, you cannot read the response from the script directly.
+                                    // For a real-world scenario with response handling, the Google Script needs proper CORS headers.
+                });
+
+                // Since using 'no-cors', response.ok or response.status will not be reliable.
+                // Assuming the script successfully processes the request.
+                // A better implementation would involve a dedicated CORS-enabled endpoint or a JSONP approach for success confirmation.
+                showMessage('ส่งคะแนนสำเร็จแล้ว!', 'success');
+                // Reset the form and selection after successful submission
+                scoringForm.reset();
+                traySelect.value = '';
+                criteriaContainer.innerHTML = '';
+                scoringForm.classList.add('hidden');
+                trayInfo.textContent = '';
+
+            } catch (error) {
+                console.error('Error submitting score:', error);
+                showMessage('เกิดข้อผิดพลาดในการส่งคะแนน กรุณาลองใหม่อีกครั้ง', 'error');
+            } finally {
+                loadingIndicator.classList.add('hidden'); // Hide loading indicator
+            }
+        }
+
+        /**
+         * Displays a message to the user.
+         * @param {string} message - The message to display.
+         * @param {string} type - 'success' or 'error' for styling.
+         */
+        function showMessage(message, type) {
+            messageDisplay.textContent = message;
+            messageDisplay.className = 'text-center text-lg mt-4'; // Reset classes
+            if (type === 'success') {
+                messageDisplay.classList.add('text-green-600');
+            } else if (type === 'error') {
+                messageDisplay.classList.add('text-red-600');
+            }
+        }
+
+        // --- Initial Load ---
+        // Ensure login section is visible on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loginSection.classList.remove('hidden');
+            scoringSection.classList.add('hidden');
+        });
+    </script>
+</body>
+</html>
